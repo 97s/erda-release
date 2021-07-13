@@ -1,0 +1,93 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: netportal
+  name: netportal
+  namespace: {{ .Values.namespace | default "erda-system" }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netportal
+  template:
+    metadata:
+      labels:
+        app: netportal
+      name: netportal
+    spec:
+      tolerations:
+      - operator: Exists
+      containers:
+      - env:
+        - name: DICE_COMPONENT
+          value: netportal
+        image: {{ .Values.image.repository }}/netportal:1.1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 20
+          periodSeconds: 15
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 10
+        name: netportal
+        readinessProbe:
+          failureThreshold: 20
+          periodSeconds: 15
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: "2"
+            memory: 512Gi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/nginx/netportal-central
+          name: netportal-central
+          readOnly: true
+      volumes:
+      - name: netportal-central
+        secret:
+          defaultMode: 420
+          secretName: netportal-central
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: false
+      restartPolicy: Always
+      shareProcessNamespace: true
+      terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+      - name: aliyun-registry
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netportal
+  namespace: {{ .Values.namespace | default "erda-system" }}
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: netportal
+  type: ClusterIP
+---
+apiVersion: v1
+data:
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN6RENDQWJTZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFYTVJVd0V3WURWUVFEREF4dVpYUncKYjNKMFlXd3RZMkV3SGhjTk1qRXdOekE1TURJME1qSXpXaGNOTXpFd056QTNNREkwTWpJeldqQVhNUlV3RXdZRApWUVFEREF4dVpYUndiM0owWVd3dFkyRXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCCkFRRHk4WStaZ3dYTTR3NmpRQjg2b0RqRXZrTi9vemdJK0hiWmUxZSt2eWhVM25XZGdhNFU3dmp4akdSVjFKaEEKTWsyakZLV2pVeHR2UTRtN2Nzb1AvRTZUa1h5Y25aQW9lSzh4TElqTEVDWC8xSUNGeUhib25lOTB6RG1YVnM0OQpKOTV5czEwRmZIcTQvWFpwejV5S3JpNmZzRm5uQlJZSjdPbG9Bb21ROFRXbTlZQWtQb0szR3VtaUcvL1BheW5XClJSUmpEczV4RzZWWUFkLzl5R1B1L3FQamRwdzEydW5MZmZreFJWUHU4MjBDcEtDNk5NcnZRQVZtZkcxZFpDcm4KeWhiaGFEQjRyeTFMZzErNWt0M2RkZGRUUE56Y0tFR0EwZUlwcFA4VmZ6MUg0OXdPVFQvb01ESUs0TE05MExNYwplcG1vZHJla0VtYnpXNnkxTlhMVXZSSXRBZ01CQUFHakl6QWhNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdEZ1lEClZSMFBBUUgvQkFRREFnS2tNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUFDTXpkNWtTUHY1VFhta2NKQVV3ODIKK1lTNkpBdmxKMVkrQy81TUJQVm4yQThWdmljNXNCWEZzejlQanllTnI0NSs0NGsxT042ZE9VS1NjdUV3dUR5SwpKVmZ0b1lwM0w0Tmx0Y1RMWDM5dTFuWFUrRUpPbDQvNlBmS1kzSEFzRDhYczYva01RM2szT29ySld0bE5iYkNoCmxLQnN6dktxVU9nSzNQWll6Z0NGOVdISjk2WXhrM1FBQ0NRSnl5dG9UNkcwUHJhenFlUGt5eWY4OXBNR3BiNloKSkNTeWp4WE5LQnd6QlJsT1dtY2dGU25mMk5xaTNWQzZTOHRaUFJURDRLUGlHbDFBTWxSZmtEV1FnQlAxREdHSApBQlpRMlovVHU0bTRlTCtKMHB5ZVhadE5wMXcvOEZTTGJXUjdwell4dWIwTGVsUXQ3enVSM3RxL2MwTWxxbXpLCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  client.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM0VENDQWNtZ0F3SUJBZ0lKQUtKaStIOEp1Y0UvTUEwR0NTcUdTSWIzRFFFQkN3VUFNQmN4RlRBVEJnTlYKQkFNTURHNWxkSEJ2Y25SaGJDMWpZVEFlRncweU1UQTNNRGt3TWpReU1qTmFGdzB6TVRBM01EY3dNalF5TWpOYQpNQ0F4SGpBY0JnTlZCQU1NRlc1bGRIQnZjblJoYkM1MFpYSnRhVzUxY3k1cGJ6Q0NBU0l3RFFZSktvWklodmNOCkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFNdVRudkV0L3gvcmNsakpxWTJ6WDc4WXNZZ3dNUGJtek14ZGtkN2gKaW1US2cxOXZXRUJGemhVY0hZaDRVWjZqdXZKMUJZd1NWNTY1NTBEaE41SFVPRm15OU16cEdXeTFTSUNRMDZXVwpRMWRiOWowVFFyeUdOZjVqQWdmZmozMkh2RUY4ZUpKODBVQnhOMFlVNGRsa2oyZTgzUGx6US9DRWlUT01HWi9ZCkZsSURLRDFGUXpkVFl6Vm90clhrTEFBblFiM213RVJLOE9vUFk4VTgxcktFeWxPWnNiUUNVakw1WHVBZ2RnVVAKTGNMRVpOVE8weTR0bElLWjliNHpyTWtKQ1VpK3EvUzA5dFJjS1N2bm5xNjIrZnRscWZWUDFybUxva1hhVUprbQpkRmdESWo2cU1MQ2pGSlVpYTN5V0t3VGZyY1pDRm5Mb1V2ajREVDhYSWI1TktnVUNBd0VBQWFNbk1DVXdEZ1lEClZSMFBBUUgvQkFRREFnV2dNQk1HQTFVZEpRUU1NQW9HQ0NzR0FRVUZCd01DTUEwR0NTcUdTSWIzRFFFQkN3VUEKQTRJQkFRQ0xOTitwMmZUaWtxblpRc1ErK055Sjc0akNpUzdoS0UwTGNVV2VTYUFYa25BNnNIMCsvSVlacEhSMAp5SDQ4aWVQb3UwNDRUV0orMXdGbVBuODFSNXl3Wm1WKzdXaFVkakpTN2RsOUtJU042YU5QK2hKTldMamlGajdwCjd0T2hKNmRxQlBOVkMrcFVCNUh5NzRsdUpha2hQaXBmVWRnVy9UT2E1aHVuTDdXOGViNXFJdGxNanNjeXJMNmMKdktMZFoyMnA5WFdkLzVpTmVoaXczM2pOMzlPNjA2UVV2bWtkR09iamFqZUlEY1FDZU9FTzR6NkxHNXFNVzZ4Ygp0RE54aWVuNHZiK0x1MlM2ckxQWmVxRWNSbnJlVlpmVXhRYy9DeG5TMEYvWHYxMnA2MnVzRU9FelUxeHZ2aXBLCmxyUWo3T1V3SWdjL3JoM08zN0N0VGxaMlB2bHkKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  client.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBeTVPZThTMy9IK3R5V01tcGpiTmZ2eGl4aURBdzl1Yk16RjJSM3VHS1pNcURYMjlZClFFWE9GUndkaUhoUm5xTzY4blVGakJKWG5ybm5RT0Uza2RRNFdiTDB6T2taYkxWSWdKRFRwWlpEVjF2MlBSTkMKdklZMS9tTUNCOStQZlllOFFYeDRrbnpSUUhFM1JoVGgyV1NQWjd6YytYTkQ4SVNKTTR3Wm45Z1dVZ01vUFVWRApOMU5qTldpMnRlUXNBQ2RCdmViQVJFcnc2ZzlqeFR6V3NvVEtVNW14dEFKU012bGU0Q0IyQlE4dHdzUmsxTTdUCkxpMlVncG4xdmpPc3lRa0pTTDZyOUxUMjFGd3BLK2VlcnJiNSsyV3A5VS9XdVl1aVJkcFFtU1owV0FNaVBxb3cKc0tNVWxTSnJmSllyQk4rdHhrSVdjdWhTK1BnTlB4Y2h2azBxQlFJREFRQUJBb0lCQUZpSGRkTkVRWEpNSFlubgpDTWtLZkZUS0ZFbzVTdEhVUkxPSzdXaVRoRytZY2RFS3hzSU1tVFlzNTlyMUYrbDVJazlWL0hlUmNuRWdQeVRECnpEcXFvMmErb0I2TUwvWktUNkU1V2hEa2E1eU43V05hQU9lakpjL2VsbjkrQlJSOTlxd3p5T3RMUkdSVjE4ZXUKUlJrWTFoUXkyWlhSUG5aVjdLUnlCS0t5Z2VKZm5qbTlqei9wVWs3RmZpYVl1ZnJvS2JSQ2k3SlV0Njl4Z3EzVwpEVnVzc0NsdkZVVUNXTjlsU0lkK0VBUWgxWjkyelk1d01aclB3eTRnZVhOUWxmbFpmN1MvczNlbWpJMmpYN3RqCnNwbStoNlZETWlidW9pNmFTODFRQWR2ZXJhZ0V1T1RNMkdpZFliQ0Yyd3c3VXA1b2ttNittWDZValZaSXd6bUQKNE5USGpuRUNnWUVBOGRkNlY1VE8zblBtTUU4cVJOdEFlS2ZKOEh1bEVOOW9uWHAzcm9hSWFWTVpjUmNhdXQ4MApOUlJidTBaam5sUmhNYVlCZjhOWVJteVRtVnNhbWJ3Y3dFRmorWGhUV1pBUFJvcnlGQy9leURjclJMQ3o3ZERhCkRwL2x5SWpxWW9qbnVlc29XOWRPeUN4dWpWZ05yQitsUmM2WW9FMU5qOWJiZnNVNUNhUlRIUGNDZ1lFQTEzNm8KZEhGQXN2WDRIWE1QYVNROFN3RThMY1N4STVhV1h4dUVEeTloZktZYnUzMzQ5dGxXZ0FWRTB0Nno4N3hRd2o2RwpDbXEya1MrY0ovZW1SRjFmNWVET2thYmVRTWdncExKajVraUNLbm1CSll1WmE2NnkyVDl5K2RxeHd4QUN5Wk1XCldyOE1hd28vUjRHUjlKODFTK21SZFU5V0xFWTg4NkpMOGt3aG5lTUNnWUEzRzlqL0dDUER3VGxWRE5VZTk2OUwKVDBEUEVmM2RTR3Q0WnkzYWtVR0licTAvZmZwVFZ3VjRpdmtVUmNmeGpselBpWHFSK0p1bkFKcnB1VDdvaFZzdgozRGJCNUU5cCswL2Z6VTI0bCtmMlM4d0tUUkhUUVdKUEx0U1h5OHROUk5FNUpvTDkycVJUTFB6TUxLS0E5SDBlCjJTTWlkRHNXYWVsK2k4YWhrZFoycFFLQmdDNE52WWFWSlpTWmlKc1NtZnFJYWZKRm8wek11bWEycWhCTld4MjcKcklQdEpBUWYyZk0zWTRzY2xTYlR2WFdiaTA3WCtlR0VDTnhpWm1jTVFCWmdOangwblBEM3pvdmR1VXc1YTZ3dApWdFFvLzNhOHJOOGNpTkJ4Qk90czE0eXVnVW4vQzBuOWhuUGh6c0JEYXFQeTJuc013YTltY3k0bkhLT2N6Y3BNCmh1cXRBb0dBQ3JsWmh2c0I0azcrZUpMakxubDNhTXl1YTFQdkpEdVpuOXlRTDlIZnJuZmw1Qk9FQ0hCQVpTRHYKNXJUaEt5dVd1dEgyeW0zY0hWY1hMS0pjYW9YMnRncUFKdnBFMEZHVVVCY3BhN294ZER6OWo1dGlFWWlFL3RqdwpuMElKeGhhUVR5SUQ1R2NxWXFHUi9sTlRDRmtmVEsxN09kN3BReGdXVTdzRFZlL0gxU289Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+kind: Secret
+metadata:
+  name: netportal-central
+  namespace: {{ .Values.namespace | default "erda-system" }}
+type: Opaque

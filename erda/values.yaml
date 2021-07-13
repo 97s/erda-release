@@ -1,0 +1,5 @@
+namespace: default
+
+domain: erda.io
+
+clusterName: erda-demo

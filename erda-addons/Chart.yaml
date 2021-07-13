@@ -1,0 +1,17 @@
+apiVersion: v2
+appVersion: 1.0.0
+description: An open-source platform bases on Kubernetes that can deploy microservice
+  applications.
+home: https://www.erda.cloud/
+icon: https://github.com/erda-project/erda/raw/develop/docs/files/logo.jpg
+keywords:
+- Kubernetes
+- microservice
+- open-source
+name: erda-addons
+sources:
+- https://github.com/erda-project/erda
+- https://github.com/erda-project/erda-infra
+- https://github.com/erda-project/erda-ui
+type: application
+version: 1.0.1
